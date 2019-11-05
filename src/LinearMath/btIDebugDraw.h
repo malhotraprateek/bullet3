@@ -68,6 +68,7 @@ public:
 		DBG_FastWireframe = (1 << 13),
 		DBG_DrawNormals = (1 << 14),
 		DBG_DrawFrames = (1 << 15),
+		DBG_DrawStoreLines = (1 << 16),
 		DBG_MAX_DEBUG_DRAW_MODE
 	};
 
@@ -82,6 +83,10 @@ public:
 	virtual void setDefaultColors(const DefaultColors& /*colors*/) {}
 
 	virtual void drawLine(const btVector3& from, const btVector3& to, const btVector3& color) = 0;
+
+	// Used to set a reference point which acts like a reference to render big objects (usually the controller)
+	//	Therefore a big object will only be partially rendered wrt to the reference point.
+	virtual void setBigObjectReferencePoint(const btVector3& refPoint) = 0;
 
 	virtual void drawLine(const btVector3& from, const btVector3& to, const btVector3& fromColor, const btVector3& toColor)
 	{

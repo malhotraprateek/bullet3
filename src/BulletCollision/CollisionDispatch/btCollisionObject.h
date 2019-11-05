@@ -137,7 +137,9 @@ public:
 		CF_HAS_CONTACT_STIFFNESS_DAMPING = 128,
 		CF_HAS_CUSTOM_DEBUG_RENDERING_COLOR = 256,
 		CF_HAS_FRICTION_ANCHOR = 512,
-		CF_HAS_COLLISION_SOUND_TRIGGER = 1024
+		CF_HAS_COLLISION_SOUND_TRIGGER = 1024,
+		CF_CUSTOM_BIG_OBJECT = 2048,
+		CF_CUSTOM_REFERENCE_POINT = 4096		// Its position will act as the reference point to partially render big objects
 	};
 
 	enum CollisionObjectTypes

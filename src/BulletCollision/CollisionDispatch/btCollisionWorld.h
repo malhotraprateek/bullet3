@@ -80,6 +80,7 @@ class btSerializer;
 #include "btCollisionDispatcher.h"
 #include "BulletCollision/BroadphaseCollision/btOverlappingPairCache.h"
 #include "LinearMath/btAlignedObjectArray.h"
+#include <unordered_map>
 
 ///CollisionWorld is interface and container for the collision detection
 class btCollisionWorld
@@ -102,6 +103,8 @@ protected:
 	void serializeCollisionObjects(btSerializer* serializer);
 
 	void serializeContactManifolds(btSerializer* serializer);
+
+	std::unordered_map<int, bool> mBigObjectDirtyFlagMap;
 
 public:
 	//this constructor doesn't own the dispatcher and paircache/broadphase

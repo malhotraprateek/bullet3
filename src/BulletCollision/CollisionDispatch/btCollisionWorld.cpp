@@ -414,9 +414,7 @@ void btCollisionWorld::rayTestSingleInternal(const btTransform& rayFromTrans, co
 				rcb.m_hitFraction = resultCallback.m_closestHitFraction;
 				triangleMesh->performRaycast(&rcb, rayFromLocalScaled, rayToLocalScaled);
 			}
-			else if (((resultCallback.m_flags&btTriangleRaycastCallback::kF_DisableHeightfieldAccelerator)==0) 
-				&& collisionShape->getShapeType() == TERRAIN_SHAPE_PROXYTYPE 
-				)
+			else if (((resultCallback.m_flags & btTriangleRaycastCallback::kF_DisableHeightfieldAccelerator) == 0) && collisionShape->getShapeType() == TERRAIN_SHAPE_PROXYTYPE)
 			{
 				///optimized version for btHeightfieldTerrainShape
 				btHeightfieldTerrainShape* heightField = (btHeightfieldTerrainShape*)collisionShape;
@@ -1501,42 +1499,123 @@ void btCollisionWorld::debugDrawWorld()
 		{
 			int i;
 
+			btVector3 referencePoint = btVector3(0.0, 0.0, 0.0);
+
 			for (i = 0; i < m_collisionObjects.size(); i++)
 			{
 				btCollisionObject* colObj = m_collisionObjects[i];
+				if (colObj->getCollisionFlags() & btCollisionObject::CF_CUSTOM_REFERENCE_POINT)
+					referencePoint = colObj->getWorldTransform().getOrigin();
+			}
+
+			getDebugDrawer()->setBigObjectReferencePoint(referencePoint);
+
+			for (i = 0; i < m_collisionObjects.size(); i++)
+			{
+				btCollisionObject* colObj = m_collisionObjects[i];
+
+				auto flag = (colObj->getCollisionFlags() & btCollisionObject::CF_CUSTOM_BIG_OBJECT);
+				if (flag > 0)
+				{
+					// Draw wireframe only once and store it
+
+					if ((colObj->getCollisionFlags() & btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT) == 0)
+					{
+						if (mBigObjectDirtyFlagMap.find(i) == mBigObjectDirtyFlagMap.end())
+							mBigObjectDirtyFlagMap.insert_or_assign(i, true);
+
+						bool dirty = mBigObjectDirtyFlagMap[i];
+
+						if (dirty)
+						{
+							if (getDebugDrawer() && (getDebugDrawer()->getDebugMode() & btIDebugDraw::DBG_DrawWireframe))
+							{
+								// Red color for emphasis on big object
+								btVector3 color(btScalar(0.8), btScalar(0.4), btScalar(0.4));
+
+								switch (colObj->getActivationState())
+								{
+									case ACTIVE_TAG:
+										color = defaultColors.m_activeObject;
+										break;
+									case ISLAND_SLEEPING:
+										color = defaultColors.m_deactivatedObject;
+										break;
+									case WANTS_DEACTIVATION:
+										color = defaultColors.m_wantsDeactivationObject;
+										break;
+									case DISABLE_DEACTIVATION:
+										color = defaultColors.m_disabledDeactivationObject;
+										break;
+									case DISABLE_SIMULATION:
+										color = defaultColors.m_disabledSimulationObject;
+										break;
+									default:
+									{
+										// Red color for emphasis on big object
+										color = btVector3(btScalar(.8), btScalar(0.4), btScalar(0.4));
+									}
+								};
+
+								colObj->getCustomDebugColor(color);
+
+								auto originalDbgMode = getDebugDrawer()->getDebugMode();
+
+								// 65536 is the enum DBG_DrawStoreLines
+
+								getDebugDrawer()->setDebugMode(getDebugDrawer()->getDebugMode() | 65536);
+								debugDrawObject(colObj->getWorldTransform(), colObj->getCollisionShape(), color);
+								getDebugDrawer()->setDebugMode(originalDbgMode);
+
+								mBigObjectDirtyFlagMap.insert_or_assign(i, false);
+							}
+						}
+					}
+				}
+				else
+				{
+					// Draw objects in wireframe mode only
+
+					if ((colObj->getCollisionFlags() & btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT) == 0)
+					{
+						if (getDebugDrawer() && (getDebugDrawer()->getDebugMode() & btIDebugDraw::DBG_DrawWireframe))
+						{
+							btVector3 color(btScalar(0.4), btScalar(0.4), btScalar(0.4));
+
+							switch (colObj->getActivationState())
+							{
+								case ACTIVE_TAG:
+									color = defaultColors.m_activeObject;
+									break;
+								case ISLAND_SLEEPING:
+									color = defaultColors.m_deactivatedObject;
+									break;
+								case WANTS_DEACTIVATION:
+									color = defaultColors.m_wantsDeactivationObject;
+									break;
+								case DISABLE_DEACTIVATION:
+									color = defaultColors.m_disabledDeactivationObject;
+									break;
+								case DISABLE_SIMULATION:
+									color = defaultColors.m_disabledSimulationObject;
+									break;
+								default:
+								{
+									color = btVector3(btScalar(.3), btScalar(0.3), btScalar(0.3));
+								}
+							};
+
+							colObj->getCustomDebugColor(color);
+
+							debugDrawObject(colObj->getWorldTransform(), colObj->getCollisionShape(), color);
+						}
+					}
+				}
+
+				// Draw AABBs normally
+
 				if ((colObj->getCollisionFlags() & btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT) == 0)
 				{
-					if (getDebugDrawer() && (getDebugDrawer()->getDebugMode() & btIDebugDraw::DBG_DrawWireframe))
-					{
-						btVector3 color(btScalar(0.4), btScalar(0.4), btScalar(0.4));
-
-						switch (colObj->getActivationState())
-						{
-							case ACTIVE_TAG:
-								color = defaultColors.m_activeObject;
-								break;
-							case ISLAND_SLEEPING:
-								color = defaultColors.m_deactivatedObject;
-								break;
-							case WANTS_DEACTIVATION:
-								color = defaultColors.m_wantsDeactivationObject;
-								break;
-							case DISABLE_DEACTIVATION:
-								color = defaultColors.m_disabledDeactivationObject;
-								break;
-							case DISABLE_SIMULATION:
-								color = defaultColors.m_disabledSimulationObject;
-								break;
-							default:
-							{
-								color = btVector3(btScalar(.3), btScalar(0.3), btScalar(0.3));
-							}
-						};
-
-						colObj->getCustomDebugColor(color);
-
-						debugDrawObject(colObj->getWorldTransform(), colObj->getCollisionShape(), color);
-					}
 					if (m_debugDrawer && (m_debugDrawer->getDebugMode() & btIDebugDraw::DBG_DrawAabb))
 					{
 						btVector3 minAabb, maxAabb;
